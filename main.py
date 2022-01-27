@@ -21,6 +21,12 @@ class Function:
     def get_slope(self, x):
         return self.a
 
+    def get_start(self):
+        return 0
+
+    def get_end(self):
+        return 3
+
 
 A = 4 * 3.14 * 6.67
 u_schlange = Function(-1 / 3, 5)
@@ -54,6 +60,13 @@ class BaseFunction:
         return x > (self.index + 1) * self.func_range / self.base_dim or x < self.func_range * (
                 self.index - 1) / self.base_dim
 
+    def get_start(self):
+        return self.func_range * (
+                self.index - 1) / self.base_dim
+
+    def get_end(self):
+        return (self.index + 1) * self.func_range / self.base_dim
+
     def get_value(self, x):
         if self.is_zero(x):
             return 0
@@ -76,7 +89,7 @@ def line_from_points(point_A: Point, point_B: Point):
 def b_u_j(base_function_slope_lambda_u: Union[BaseFunction, Function],
           base_function_slope_lambda_v: Union[BaseFunction, Function]):
     func = lambda x: -base_function_slope_lambda_u.get_slope(x) * base_function_slope_lambda_v.get_slope(x)
-    return quad(func, 0, 3)[0]
+    return quad(func, base_function_slope_lambda_u.get_start(), base_function_slope_lambda_v.get_end())[0]
 
 
 def l(v: Union[BaseFunction, Function]):
@@ -90,26 +103,28 @@ def rhs_matrix_coeff(e):
 
 def main(base_dim, func_range):
     B = np.array(
-        [[b_u_j(BaseFunction(i + 1, base_dim, func_range), BaseFunction(j + 1, base_dim, func_range)) for i in
+        [[b_u_j(BaseFunction(i, base_dim, func_range), BaseFunction(j, base_dim, func_range)) for i in
           range(base_dim)] for j in range(base_dim)],
         dtype="float64"
     )
     print(B)
 
     R = np.array(
-        [rhs_matrix_coeff(BaseFunction(index + 1, base_dim, func_range)) for index in range(base_dim)],
+        [rhs_matrix_coeff(BaseFunction(index, base_dim, func_range)) for index in range(base_dim)],
         dtype="float64"
     )
+
+    print(R)
 
     res = np.linalg.solve(B, R)
 
     print(res)
 
-    res_func = lambda x: sum(res[i] * BaseFunction(i + 1, base_dim, func_range).get_value(x) for i in range(len(res))) + u_schlange.get_value(x)
+    res_func = lambda x: sum(res[i] * BaseFunction(i, base_dim, func_range).get_value(x) for i in range(len(res))) + u_schlange.get_value(x)
     x = np.arange(0, 3, 0.001)
     plt.plot(x, np.array([res_func(i) for i in x]))
     plt.show()
 
 
 if __name__ == '__main__':
-    main(19, 3)
+    main(125, 3)
